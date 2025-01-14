@@ -8,14 +8,15 @@ export const AuthCallback = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // Check for error parameters in the URL
+        // Parse the URL hash
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        
+        // Check for error first
         const error = hashParams.get('error');
         const errorDescription = hashParams.get('error_description');
         const errorCode = hashParams.get('error_code');
 
         if (error) {
-          // Handle expired link case
           if (errorCode === 'otp_expired') {
             navigate('/verify-email', {
               state: {
@@ -25,26 +26,38 @@ export const AuthCallback = () => {
             });
             return;
           }
-
-          // Handle other errors
           throw new Error(errorDescription || 'Authentication failed');
         }
 
-        // Handle successful verification
+        // Get all the tokens and parameters
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
+        const expiresIn = hashParams.get('expires_in');
+        const expiresAt = hashParams.get('expires_at');
+        const tokenType = hashParams.get('token_type');
+        const type = hashParams.get('type');
+
+        console.log('Auth callback parameters:', {
+          accessToken: accessToken?.substring(0, 10) + '...',
+          refreshToken: refreshToken?.substring(0, 10) + '...',
+          expiresIn,
+          expiresAt,
+          tokenType,
+          type
+        });
 
         if (!accessToken || !refreshToken) {
           throw new Error('No authentication tokens found');
         }
 
-        // Set the session
+        // Set the session with all parameters
         const { data: { session }, error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken
         });
 
         if (sessionError) {
+          console.error('Session error:', sessionError);
           throw sessionError;
         }
 
@@ -60,7 +73,7 @@ export const AuthCallback = () => {
           }
 
           // Redirect to home on success
-          navigate('/');
+          navigate('/', { replace: true });
         } else {
           throw new Error('No user session found');
         }
