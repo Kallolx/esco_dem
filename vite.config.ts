@@ -29,8 +29,8 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     port: 3000,
+    strictPort: false,
     host: true,
-    strictPort: true,
     proxy: mode === 'development' ? {
       '/api': {
         target: 'http://localhost:3000',

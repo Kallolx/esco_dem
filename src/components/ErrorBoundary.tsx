@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Title, Text, Button, Stack } from '@mantine/core';
+import { Container, Title, Text, Button, Stack, type StackProps } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 
 interface Props {
@@ -36,17 +36,24 @@ export class ErrorBoundary extends React.Component<Props, State> {
 const ErrorFallback = ({ error }: { error?: Error }) => {
   const navigate = useNavigate();
 
+  const stackProps: StackProps = {
+    gap: "xl",
+    align: "center",
+    style: { textAlign: 'center' }
+  };
+
   return (
     <Container size="md" pt={100}>
-      <Stack gap="lg" align="center">
-        <Title order={1} ta="center">Oops! Something went wrong</Title>
-        <Text size="lg" c="dimmed" ta="center" w="100%">
+      <Stack {...stackProps}>
+        <Title order={1}>Oops! Something went wrong</Title>
+        <Text size="lg" c="dimmed">
           {error?.message || 'An unexpected error occurred'}
         </Text>
         <Button 
           onClick={() => navigate('/', { replace: true })}
           variant="filled"
           color="blue"
+          size="md"
         >
           Return to Home
         </Button>

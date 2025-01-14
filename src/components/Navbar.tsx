@@ -30,8 +30,6 @@ const NAV_ITEMS = [
   { label: 'HOME', path: '/' },
   { label: 'MODELS', path: '/models' },
   { label: 'MASSAGE', path: '/locations' },
-  { label: 'LIVE ESCORTS', path: '/categories' },
-  { label: 'CASTING', path: '/casting' },
   { label: 'Upgrade', path: '/upgrade' }
 ];
 
@@ -188,7 +186,17 @@ const Navbar: React.FC = () => {
 
             {/* Logo */}
             <Link to="/" style={{ textDecoration: 'none' }}>
-              <Text size="xl" c="white" fw={500}>HAUTE LONDON</Text>
+              <Text 
+                size="xl" 
+                c="white" 
+                fw={500}
+                style={{ 
+                  fontFamily: 'Righteous, cursive',
+                  letterSpacing: '1px'
+                }}
+              >
+                👻 SkipTheScammers
+              </Text>
             </Link>
 
             {/* Desktop Navigation */}
