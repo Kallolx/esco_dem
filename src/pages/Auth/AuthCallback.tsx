@@ -6,57 +6,55 @@ export const AuthCallback = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Get the current URL
-    const url = window.location.href;
-    console.log('Current URL:', url);
-
     const handleAuthCallback = async () => {
       try {
-        // Get the current hash parameters
+        // Get the current URL hash parameters
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const type = hashParams.get('type');
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
 
-        // If this is a signup confirmation
-        if (type === 'signup') {
-          // Get the access token and refresh token
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
-
-          if (!accessToken || !refreshToken) {
-            throw new Error('No tokens found in URL');
-          }
-
-          // Set the session
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
+        if (!accessToken || !refreshToken) {
+          console.error('No tokens found in URL');
+          navigate('/login', {
+            state: { error: 'Authentication failed. Please try again.' },
+            replace: true
           });
-
-          if (error) {
-            throw error;
-          }
-
-          if (data.session) {
-            // Update user's last login
-            await supabase
-              .from('users')
-              .update({ last_login: new Date().toISOString() })
-              .eq('id', data.session.user.id);
-
-            // Redirect to home page
-            window.location.href = '/';
-            return;
-          }
+          return;
         }
 
-        // For other types of callbacks or if something went wrong
-        navigate('/', { replace: true });
+        // Set the session
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        if (data.session) {
+          // Update user's last login
+          await supabase
+            .from('users')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', data.session.user.id);
+
+          // Redirect based on the callback type
+          if (type === 'signup') {
+            navigate('/', { replace: true });
+          } else {
+            // For other types, redirect to the previous page or home
+            const returnTo = sessionStorage.getItem('returnTo') || '/';
+            sessionStorage.removeItem('returnTo');
+            navigate(returnTo, { replace: true });
+          }
+        }
       } catch (error) {
         console.error('Error in auth callback:', error);
-        // Redirect to login on error
         navigate('/login', {
           state: {
-            error: 'Failed to verify email. Please try again or contact support.'
+            error: 'Authentication failed. Please try again or contact support.'
           },
           replace: true
         });

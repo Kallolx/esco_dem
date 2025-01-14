@@ -69,13 +69,22 @@ export const PostAd = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/login');
+        // Store the current path to redirect back after login
+        sessionStorage.setItem('returnTo', window.location.pathname);
+        navigate('/login', { 
+          state: { message: 'Please login to post an ad' },
+          replace: true 
+        });
         return;
       }
       setUser(user);
     } catch (error) {
       console.error('Error checking auth:', error);
-      navigate('/login');
+      sessionStorage.setItem('returnTo', window.location.pathname);
+      navigate('/login', { 
+        state: { error: 'Authentication error. Please login again.' },
+        replace: true 
+      });
     }
   };
 
