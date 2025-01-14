@@ -1,473 +1,489 @@
-import React, { useState } from 'react';
-import { Container, Select, SimpleGrid, Text } from '@mantine/core';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Container, Button, SimpleGrid, Paper, Text, Box, Title, Menu, Group, Center, Loader, Alert} from '@mantine/core';
 import { 
-  FaUserFriends, 
-  FaRegGem, 
-  FaPhoneAlt,
-  FaRegClock, 
-  FaMapMarkedAlt, 
-  FaRegSmile
-} from 'react-icons/fa';
-import ServiceCard from '../components/ServiceCard';
+  IconMap2, 
+  IconChevronRight, 
+  IconWorld, 
+  IconMap,
+  IconChevronDown,
+  IconCheckbox
+} from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
+import { statesData, StateData } from '../data/statesData';
+import { EscortCard } from '../components/EscortCard';
+import { supabase } from '../lib/supabase';
 
 
-// Enhanced location data with states and cities
-const locationData = [
-  // New York State
-  { 
-    value: 'manhattan', 
-    label: 'Manhattan', 
-    region: 'New York State',
-    icon: '🗽'
-  },
-  { 
-    value: 'brooklyn', 
-    label: 'Brooklyn', 
-    region: 'New York State',
-    icon: '🌉'
-  },
-  { 
-    value: 'queens', 
-    label: 'Queens', 
-    region: 'New York State',
-    icon: '🏙️'
-  },
-  { 
-    value: 'buffalo', 
-    label: 'Buffalo', 
-    region: 'New York State',
-    icon: '🏢'
-  },
-  { 
-    value: 'albany', 
-    label: 'Albany', 
-    region: 'New York State',
-    icon: '🏛️'
-  },
-  
-  // California
-  { 
-    value: 'los-angeles', 
-    label: 'Los Angeles', 
-    region: 'California',
-    icon: '🌆'
-  },
-  { 
-    value: 'san-francisco', 
-    label: 'San Francisco', 
-    region: 'California',
-    icon: '🌁'
-  },
-  { 
-    value: 'san-diego', 
-    label: 'San Diego', 
-    region: 'California',
-    icon: '🏖️'
-  },
-  { 
-    value: 'sacramento', 
-    label: 'Sacramento', 
-    region: 'California',
-    icon: '🏛️'
-  },
-  { 
-    value: 'san-jose', 
-    label: 'San Jose', 
-    region: 'California',
-    icon: '💻'
-  },
-  
-  // Florida
-  { 
-    value: 'miami', 
-    label: 'Miami', 
-    region: 'Florida',
-    icon: '🌴'
-  },
-  { 
-    value: 'orlando', 
-    label: 'Orlando', 
-    region: 'Florida',
-    icon: '🎡'
-  },
-  { 
-    value: 'tampa', 
-    label: 'Tampa', 
-    region: 'Florida',
-    icon: '⛵'
-  },
-  { 
-    value: 'jacksonville', 
-    label: 'Jacksonville', 
-    region: 'Florida',
-    icon: '🌊'
-  },
-  { 
-    value: 'tallahassee', 
-    label: 'Tallahassee', 
-    region: 'Florida',
-    icon: '🏛️'
-  },
-  
-  // Texas
-  { 
-    value: 'houston', 
-    label: 'Houston', 
-    region: 'Texas',
-    icon: '🛢️'
-  },
-  { 
-    value: 'dallas', 
-    label: 'Dallas', 
-    region: 'Texas',
-    icon: '🌆'
-  },
-  { 
-    value: 'austin', 
-    label: 'Austin', 
-    region: 'Texas',
-    icon: '🎸'
-  },
-  { 
-    value: 'san-antonio', 
-    label: 'San Antonio', 
-    region: 'Texas',
-    icon: '🏰'
-  },
-  { 
-    value: 'el-paso', 
-    label: 'El Paso', 
-    region: 'Texas',
-    icon: '🌵'
-  },
+// CSS for animations and global styles
+const globalStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
 
-  // Illinois
-  { 
-    value: 'chicago', 
-    label: 'Chicago', 
-    region: 'Illinois',
-    icon: '🌆'
-  },
-  { 
-    value: 'springfield', 
-    label: 'Springfield', 
-    region: 'Illinois',
-    icon: '🏛️'
-  },
-  { 
-    value: 'aurora', 
-    label: 'Aurora', 
-    region: 'Illinois',
-    icon: '🌅'
-  },
-  { 
-    value: 'naperville', 
-    label: 'Naperville', 
-    region: 'Illinois',
-    icon: '🏘️'
-  },
-
-  // Nevada
-  { 
-    value: 'las-vegas', 
-    label: 'Las Vegas', 
-    region: 'Nevada',
-    icon: '🎰'
-  },
-  { 
-    value: 'reno', 
-    label: 'Reno', 
-    region: 'Nevada',
-    icon: '🎲'
-  },
-  { 
-    value: 'henderson', 
-    label: 'Henderson', 
-    region: 'Nevada',
-    icon: '🏜️'
-  },
-  { 
-    value: 'carson-city', 
-    label: 'Carson City', 
-    region: 'Nevada',
-    icon: '🏛️'
+  .switch-button {
+    font-family: 'Poppins', sans-serif;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #FFD700;
+    color: #FFD700;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
   }
-];
 
-// Group locations by region with enhanced display
-const groupedLocations = locationData.reduce((acc: any[], location) => {
-  const group = acc.find(g => g.group === location.region);
-  
-  if (group) {
-    group.items.push({
-      value: location.value,
-      label: `${location.icon}  ${location.label}`
-    });
-  } else {
-    acc.push({
-      group: location.region,
-      items: [{
-        value: location.value,
-        label: `${location.icon}  ${location.label}`
-      }]
-    });
+  .switch-button:hover {
+    background: #FFD700;
+    color: black;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
   }
-  return acc;
-}, []);
 
-
-// Mock data for services
-const availableServiceData = [
-  { 
-    value: 'escort', 
-    label: 'Escort Services',
-    icon: '👩‍❤️‍👨'
-  },
-  { 
-    value: 'massage', 
-    label: 'Body Massage',
-    icon: '💆‍♀️'
-  },
-  { 
-    value: 'spa', 
-    label: 'Spa Treatment',
-    icon: '🌺'
+  .state-button {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
   }
-];
 
-// Group services with icons
-const getServicesWithIcons = () => {
-  return availableServiceData.map(service => ({
-    value: service.value,
-    label: `${service.icon}  ${service.label}`
-  }));
-};
+  .city-button {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+  }
 
-const serviceDetails = {
-  escort: [
-    {
-      name: "Sophie Rose",
-      age: 23,
-      address: "Mayfair, Central London",
-      bio: "Elegant and sophisticated companion for the discerning gentleman",
-      phone: "+44 20 1234 5678",
-      email: "sophie.rose@hautelondon.com",
-      rates: [
-        { duration: "30 min", price: 150 },
-        { duration: "1 hour", price: 250 },
-        { duration: "2 hours", price: 450 },
-        { duration: "Overnight", price: 1200 }
-      ],
-      description: "Offering a genuine girlfriend experience with class and sophistication. Available for dinner dates, social events, and private encounters.",
-      location: "Central London",
-      status: "VIP" as const,
-      images: [
-        "https://bpaws.b-cdn.net/920a6190133079464bf7686d9cb88f2e.jpg",
-        "https://bpaws.b-cdn.net/3df27d6abd7b3227278fc651683297c0.jpg",
-        "https://bpaws.b-cdn.net/45968f4913fb31178ac3496687f21bb5.jpg",
-        "https://bpaws.b-cdn.net/cac5286105e6ca99b1a0a076fddf7e54.jpg"
-      ]
-    },
-    {
-      name: "Isabella Moon",
-      age: 25,
-      address: "Knightsbridge, London",
-      bio: "Charming and adventurous companion for memorable experiences",
-      phone: "+44 20 9876 5432",
-      email: "isabella.moon@hautelondon.com",
-      rates: [
-        { duration: "1 hour", price: 300 },
-        { duration: "2 hours", price: 500 },
-        { duration: "4 hours", price: 900 },
-        { duration: "Overnight", price: 1500 }
-      ],
-      description: "Elite companion offering unforgettable moments. Perfect for high-class events, private dinners, and exclusive experiences.",
-      location: "Central London",
-      status: "Premium" as const,
-      images: [
-        "https://bpaws.b-cdn.net/65155158afc937538f9bb6795677005c.png",
-        "https://bpaws.b-cdn.net/8ca45afd122fa3d37af3896c789c0b3e.png",
-        "https://bpaws.b-cdn.net/47b5d4bf1257f37f227ebfce7c9deafd.png",
-        "https://bpaws.b-cdn.net/35b64479af6c1b590ae5cf80a44e2b25.png"
-      ]
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
     }
-  ],
-  massage: [
-    {
-      name: "Emma Grace",
-      age: 28,
-      address: "Chelsea, London",
-      bio: "Professional massage therapist with healing hands",
-      phone: "+44 20 5555 1234",
-      email: "emma.grace@hautelondon.com",
-      rates: [
-        { duration: "30 min", price: 80 },
-        { duration: "1 hour", price: 120 },
-        { duration: "90 min", price: 170 },
-        { duration: "2 hours", price: 200 }
-      ],
-      description: "Certified massage therapist specializing in Swedish, deep tissue, and aromatherapy massage techniques.",
-      location: "West London",
-      status: "Elite" as const,
-      images: [
-        "https://bpaws.b-cdn.net/8a5534f9a3ab70d4e9ddc1f25570757f.jpg",
-        "https://bpaws.b-cdn.net/392dc9a7285d7db0660a19b7637c3b89.jpg",
-        "https://bpaws.b-cdn.net/096c81fb8ef8e7e2c48b5479a8440724.jpg",
-        "https://bpaws.b-cdn.net/79764048ed6f6ed7eb785786b2d8a21b.jpg"
-      ]
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
-  ],
-  spa: [
-    {
-      name: "Victoria Wellness",
-      age: 26,
-      address: "Kensington, London",
-      bio: "Luxury spa treatment specialist",
-      phone: "+44 20 7777 8888",
-      email: "victoria@hautelondon.com",
-      rates: [
-        { duration: "1 hour", price: 150 },
-        { duration: "2 hours", price: 280 },
-        { duration: "3 hours", price: 400 },
-        { duration: "Full Day", price: 800 }
-      ],
-      description: "Comprehensive spa treatments including aromatherapy, hot stone massage, and luxury facials.",
-      location: "South London",
-      status: "Standard" as const,
-      images: [
-        "https://bpaws.b-cdn.net/a62f7ca7e1238d1882a59ca625bc1a61.jpg",
-        "https://bpaws.b-cdn.net/ee86391fc532dfb020aaed68b03a81b1.jpg",
-        "https://bpaws.b-cdn.net/eef198e89946ccb4632d9c5c8cc829e9.jpg",
-        "https://bpaws.b-cdn.net/f04fedec01f0ea1ad145d8e19b50eaec.jpg"
-      ]
-    }
-  ]
+  }
+`;
+
+// Add styles to document
+const styleSheet = document.createElement("style");
+styleSheet.textContent = globalStyles;
+document.head.appendChild(styleSheet);
+
+// Extracted StateButton component
+const StateButton = React.memo(({ 
+  state, 
+  isSelected, 
+  onClick, 
+  cities,
+  onCityClick 
+}: { 
+  state: string; 
+  isSelected: boolean; 
+  onClick: () => void; 
+  cities: string[];
+  onCityClick: (city: string) => void;
+}) => (
+  <div style={{ position: 'relative' }}>
+    <button
+      className="state-button"
+      onClick={onClick}
+      style={{
+        width: '100%',
+        padding: '12px',
+        backgroundColor: isSelected ? '#ff4b6e' : 'rgba(0, 0, 0, 0.3)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '8px',
+        color: 'white',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        marginBottom: isSelected ? '8px' : '0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}
+    >
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{
+          width: '8px',
+          height: '8px',
+          borderRadius: '50%',
+          backgroundColor: isSelected ? 'white' : '#ff4b6e',
+          transition: 'all 0.2s ease'
+        }} />
+        <span style={{ textAlign: 'left' }}>{state}</span>
+      </span>
+      {cities.length > 0 && (
+        <IconChevronRight
+          size={16}
+          style={{
+            transform: isSelected ? 'rotate(90deg)' : 'none',
+            transition: 'transform 0.2s ease'
+          }}
+        />
+      )}
+    </button>
+    {isSelected && (
+      <div style={{ 
+        position: 'absolute', 
+        top: '100%', 
+        left: 0, 
+        right: 0, 
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        borderRadius: '8px',
+        padding: '8px',
+        zIndex: 10,
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        animation: 'slideDown 0.2s ease',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+      }}>
+        {cities.map((city) => (
+          <Button
+            key={city}
+            className="city-button"
+            variant="subtle"
+            leftSection={
+              <div style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: '#ff4b6e'
+              }} />
+            }
+            fullWidth
+            onClick={() => onCityClick(city)}
+            mb={4}
+            styles={{
+              root: {
+                color: 'white',
+                textAlign: 'left',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 75, 110, 0.2)'
+                }
+              },
+              inner: {
+                justifyContent: 'flex-start'
+              }
+            }}
+          >
+            {city}
+          </Button>
+        ))}
+      </div>
+    )}
+  </div>
+));
+
+// Custom hook for mobile detection
+const useMobileDetection = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return isMobile;
 };
 
 
-const Home: React.FC = () => {
-  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
-  const [selectedService, setSelectedService] = useState<string | null>(null);
+export const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const [viewMode, setViewMode] = useState<'directory' | 'map'>('directory');
+  const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [_selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [verifiedEscorts, setVerifiedEscorts] = useState<any[]>([]);
+  const isMobile = useMobileDetection();
+  const [_cities, setCities] = useState<string[]>([]);
 
-  const serviceCards = selectedService ? serviceDetails[selectedService as keyof typeof serviceDetails] : [];
+  useEffect(() => {
+    fetchActiveAds();
+  }, []);
 
-  // Get the region name for display
-  const getLocationDisplay = (value: string | null) => {
-    if (!value) return '';
-    const location = locationData.find(loc => loc.value === value);
-    return location ? `${location.label}, ${location.region}` : '';
+  const fetchActiveAds = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error } = await supabase
+        .from('ads')
+        .select('*')
+        .eq('status', 'active')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Format the data to match the EscortCard interface
+      const formattedData = data?.map(escort => ({
+        id: escort.id,
+        title: escort.title || 'Anonymous',
+        city: escort.city,
+        state: escort.state,
+        images: escort.images || [],
+        user_id: escort.created_by,
+        description: escort.description || '',
+        incall_hourly: escort.incall_hourly,
+        incall_twohour: escort.incall_twohour,
+        incall_overnight: escort.incall_overnight,
+        outcall_hourly: escort.outcall_hourly,
+        outcall_twohour: escort.outcall_twohour,
+        outcall_overnight: escort.outcall_overnight
+      })) || [];
+
+      setVerifiedEscorts(formattedData);
+    } catch (error) {
+      console.error('Error fetching ads:', error);
+      setError('Failed to load ads. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <div className="relative min-h-screen">
-      {/* Background Image with enhanced gradient */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed"
-        style={{ backgroundImage: 'url(/images/hero/hero.jpg)' }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/70" />
+  // Memoized filtered states
+  const filteredStates = useMemo(() => {
+    return statesData;
+  }, []);
+
+  // Memoized handlers
+  const handleStateClick = useCallback((stateName: string) => {
+    setSelectedState(prevState => prevState === stateName ? null : stateName);
+    setSelectedCity(null);
+  }, []);
+
+  const handleCityClick = useCallback((city: string) => {
+    if (selectedState) {
+      setSelectedCity(city);
+      const formattedState = selectedState.toLowerCase().replace(/\s+/g, '-');
+      const formattedCity = city.toLowerCase().replace(/\s+/g, '-');
+      navigate(`/location/${formattedState}/${formattedCity}`, { replace: true });
+    }
+  }, [selectedState, navigate]);
+
+  const toggleView = useCallback(() => {
+    setViewMode(current => current === 'directory' ? 'map' : 'directory');
+  }, []);
+
+  const renderEscortCard = (escort: any) => {
+    console.log('Rendering escort card:', {
+      id: escort.id,
+      title: escort.title,
+      images: escort.images,
+      city: escort.city,
+      state: escort.state,
+      rates: {
+        incall_hourly: escort.incall_hourly,
+        incall_twohour: escort.incall_twohour,
+        incall_overnight: escort.incall_overnight,
+        outcall_hourly: escort.outcall_hourly,
+        outcall_twohour: escort.outcall_twohour,
+        outcall_overnight: escort.outcall_overnight
+      }
+    });
+    
+    return (
+      <div key={escort.id} style={{ width: '100%', maxWidth: 350 }}>
+        <EscortCard
+          escort={{
+            id: escort.id,
+            title: escort.title || 'Anonymous',
+            city: escort.city,
+            state: escort.state,
+            images: escort.images || [],
+            user_id: escort.created_by,
+            description: escort.description || '',
+            incall_hourly: escort.incall_hourly,
+            incall_twohour: escort.incall_twohour,
+            incall_overnight: escort.incall_overnight,
+            outcall_hourly: escort.outcall_hourly,
+            outcall_twohour: escort.outcall_twohour,
+            outcall_overnight: escort.outcall_overnight
+          }}
+        />
       </div>
+    );
+  };
 
-      {/* Content */}
-      <Container size="xl" className="relative z-10 px-4 pt-[120px] md:pt-[180px] pb-12 md:pb-20">
-        {/* Hero Section */}
-        <div className="text-center mb-12 md:mb-20">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-forum text-white mb-4 md:mb-8 tracking-wide">
-            Find Your Desire
-          </h1>
-          <div className="flex items-center justify-center gap-8 md:gap-12 max-w-2xl mx-auto px-4">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center backdrop-blur-sm border border-white/10 group-hover:scale-110 transition-transform">
-                <FaUserFriends className="text-[#ff4b6e] text-lg" />
-              </div>
-              <span className="text-white/70 text-sm font-forum">Verified</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center backdrop-blur-sm border border-white/10 group-hover:scale-110 transition-transform">
-                <FaRegGem className="text-[#ff4b6e] text-lg" />
-              </div>
-              <span className="text-white/70 text-sm font-forum">Premium</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center backdrop-blur-sm border border-white/10 group-hover:scale-110 transition-transform">
-                <FaPhoneAlt className="text-[#ff4b6e] text-lg" />
-              </div>
-              <span className="text-white/70 text-sm font-forum">24/7 Support</span>
-            </div>
-          </div>
-        </div>
+  // Update cities when state changes
+  useEffect(() => {
+    if (selectedState) {
+      const stateData = statesData.find(state => state.name === selectedState);
+      setCities(stateData?.cities || []);
+    } else {
+      setCities([]);
+    }
+  }, [selectedState]);
 
-        {/* Selectors */}
-        <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 px-4">
-          {/* Location Selector */}
-          <div className="relative group transform hover:scale-[1.02] transition-all duration-300">
-            <Select
-              placeholder="Where would you like to meet?"
-              data={groupedLocations}
-              value={selectedLocation}
-              onChange={setSelectedLocation}
-              searchable
-              maxDropdownHeight={400}
-              leftSection={<FaMapMarkedAlt className="text-[#ff4b6e] group-hover:scale-110 transition-transform" size={24} />}
-              size="lg"
-              classNames={{
-                input: 'bg-black/40 border-2 border-white/20 text-white font-forum text-lg md:text-xl pl-12 md:pl-14 pr-4 md:pr-6 h-[60px] md:h-[70px] hover:border-[#ff4b6e]/50 transition-all duration-300 rounded-xl shadow-lg backdrop-blur-lg',
-                dropdown: 'bg-black/90 border border-white/10 backdrop-blur-md rounded-xl mt-2',
-                option: 'text-white font-forum hover:bg-[#ff4b6e]/10 transition-colors py-3 text-base md:text-lg',
-                groupLabel: 'text-[#ff4b6e] font-forum text-lg md:text-xl px-4 py-3 border-b border-white/10'
+
+  return (
+    <Box 
+      pt={{ base: 80, sm: 120 }}
+      style={{
+        minHeight: '100vh',
+        backgroundImage: `linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), url('/images/hero.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      <Container size="xl">
+        <Box>
+          <Group justify="space-between" align="center" mb="md">
+            <Menu shadow="md" width={200}>
+              <Menu.Target>
+                <Button
+                  variant="filled"
+                  style={{
+                    backgroundColor: '#ff4b6e',
+                    fontFamily: 'Poppins, sans-serif',
+                    fontWeight: 500
+                  }}
+                  rightSection={<IconChevronDown size={16} />}
+                  leftSection={<IconWorld size={18} />}
+                >
+                  United States
+                </Button>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Item
+                  disabled
+                  rightSection={
+                    <Text size="xs" c="dimmed" style={{ backgroundColor: '#ff4b6e20', padding: '2px 6px', borderRadius: '4px' }}>Soon</Text>
+                  }
+                >
+                  Canada
+                </Menu.Item>
+                <Menu.Item
+                  disabled
+                  rightSection={
+                    <Text size="xs" c="dimmed" style={{ backgroundColor: '#ff4b6e20', padding: '2px 6px', borderRadius: '4px' }}>Soon</Text>
+                  }
+                >
+                  Europe
+                </Menu.Item>
+                <Menu.Item
+                  disabled
+                  rightSection={
+                    <Text size="xs" c="dimmed" style={{ backgroundColor: '#ff4b6e20', padding: '2px 6px', borderRadius: '4px' }}>Soon</Text>
+                  }
+                >
+                  France
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+
+            <button
+              className="switch-button"
+              onClick={toggleView}
+              style={{
+                backgroundColor: viewMode === 'directory' ? 'rgba(255, 75, 110, 0.1)' : 'rgba(0, 0, 0, 0.3)',
+                borderColor: '#ff4b6e',
+                color: '#ff4b6e',
+                padding: '8px 16px'
               }}
-            />
-            
-            {/* Decorative elements */}
-            <div className="absolute -inset-[2px] bg-gradient-to-r from-[#ff4b6e]/20 via-[#ff4b6e]/10 to-[#ff4b6e]/20 rounded-xl -z-10 group-hover:blur-xl transition-all duration-300" />
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-[#ff4b6e]/10 via-[#ff4b6e]/5 to-[#ff4b6e]/10 rounded-xl blur-xl -z-20 group-hover:blur-2xl transition-all duration-300" />
-          </div>
+            >
+              {viewMode === 'directory' ? (
+                <>
+                  <IconMap2 size={18} />
+                  MAP VIEW
+                </>
+              ) : (
+                <>
+                  <IconWorld size={18} />
+                  DIRECTORY
+                </>
+              )}
+            </button>
+          </Group>
 
-          {/* Selected Location Display */}
-          {selectedLocation && (
-            <div className="flex items-center justify-center gap-2 md:gap-3 text-white/90 font-forum text-lg md:text-xl py-3 md:py-4 px-4 backdrop-blur-sm bg-black/20 rounded-xl border border-white/10">
-              <FaRegSmile className="text-[#ff4b6e]" size={20} />
-              <Text className="tracking-wide">Selected Area: {getLocationDisplay(selectedLocation)}</Text>
-            </div>
+          {viewMode === 'directory' ? (
+            <>
+              <SimpleGrid cols={isMobile ? 2 : { base: 2, sm: 3, md: 4, lg: 6 }} spacing={12}>
+                {filteredStates.map((state: StateData) => (
+                  <StateButton
+                    key={state.name}
+                    state={state.name}
+                    isSelected={selectedState === state.name}
+                    onClick={() => handleStateClick(state.name)}
+                    cities={state.cities}
+                    onCityClick={handleCityClick}
+                  />
+                ))}
+              </SimpleGrid>
+
+              <Box mt={40}>
+                <Group justify="space-between" mb="lg">
+                  <Title 
+                    order={3} 
+                    style={{ 
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <IconCheckbox size={24} style={{ color: '#ff4b6e' }} />
+                    Verified Escorts
+                  </Title>
+                  <Button
+                    variant="subtle"
+                    color="gray"
+                    rightSection={<IconChevronRight size={16} />}
+                  >
+                    View All
+                  </Button>
+                </Group>
+                {loading ? (
+                  <Center>
+                    <Loader color="#ff4b6e" size="xl" />
+                  </Center>
+                ) : error ? (
+                  <Alert color="red" title="Error">
+                    {error}
+                  </Alert>
+                ) : verifiedEscorts.length === 0 ? (
+                  <Text c="dimmed">No active ads found</Text>
+                ) : (
+                  <SimpleGrid
+                    cols={{ base: 1, sm: 2, md: 3 }}
+                    spacing="lg"
+                    verticalSpacing="xl"
+                  >
+                    {verifiedEscorts.map(renderEscortCard)}
+                  </SimpleGrid>
+                )}
+              </Box>
+            </>
+          ) : (
+            <Paper 
+              style={{ 
+                textAlign: 'center', 
+                padding: '20px',
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                fontFamily: 'Poppins, sans-serif'
+              }}
+            >
+              <IconMap size={32} style={{ color: '#ff4b6e', marginBottom: '8px' }} />
+              <Text size="lg" c="dimmed" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Interactive Map Coming Soon! 🗺️
+              </Text>
+              <Text size="sm" c="dimmed" mt="xs" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                We're working on an interactive map to make location selection even easier. ✨
+              </Text>
+            </Paper>
           )}
-
-          {/* Service Selector */}
-          {selectedLocation && (
-            <div className="relative group transform hover:scale-[1.02] transition-all duration-300">
-              <Select
-                placeholder="What experience are you looking for?"
-                data={getServicesWithIcons()}
-                value={selectedService}
-                onChange={setSelectedService}
-                size="lg"
-                leftSection={<FaRegClock className="text-[#ff4b6e] group-hover:scale-110 transition-transform" size={24} />}
-                classNames={{
-                  input: 'bg-black/40 border-2 border-white/20 text-white font-forum text-lg md:text-xl pl-12 md:pl-14 pr-4 md:pr-6 h-[60px] md:h-[70px] hover:border-[#ff4b6e]/50 transition-all duration-300 rounded-xl shadow-lg backdrop-blur-lg',
-                  dropdown: 'bg-black/90 border border-white/10 backdrop-blur-md rounded-xl mt-2',
-                  option: 'text-white font-forum hover:bg-[#ff4b6e]/10 transition-colors py-3 text-base md:text-lg',
-                  label: 'text-white/90 font-forum'
-                }}
-              />
-              <div className="absolute -inset-[2px] bg-gradient-to-r from-[#ff4b6e]/20 via-[#ff4b6e]/10 to-[#ff4b6e]/20 rounded-xl -z-10 group-hover:blur-xl transition-all duration-300" />
-              <div className="absolute -inset-[1px] bg-gradient-to-r from-[#ff4b6e]/10 via-[#ff4b6e]/5 to-[#ff4b6e]/10 rounded-xl blur-xl -z-20 group-hover:blur-2xl transition-all duration-300" />
-            </div>
-          )}
-        </div>
-
-        {/* Service Cards */}
-        {selectedService && (
-          <SimpleGrid 
-            cols={{ base: 1, md: 2 }} 
-            spacing={{ base: "md", md: "xl" }} 
-            className="mt-8 md:mt-12 px-2 md:px-4"
-          >
-            {serviceCards.map((service, index) => (
-              <ServiceCard key={index} {...service} />
-            ))}
-          </SimpleGrid>
-        )}
+        </Box>
       </Container>
-    </div>
+    </Box>
   );
 };
 
