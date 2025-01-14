@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
   base: '/',
   build: {
@@ -11,28 +11,35 @@ export default defineConfig({
     assetsDir: 'assets',
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
+    sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          mantine: ['@mantine/core', '@mantine/hooks', '@mantine/notifications'],
-          icons: ['@tabler/icons-react', 'react-icons'],
-        },
-      },
-    },
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'mantine-vendor': ['@mantine/core', '@mantine/hooks', '@mantine/notifications'],
+          'icons': ['@tabler/icons-react']
+        }
+      }
+    }
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+      '@': path.resolve(__dirname, './src')
+    }
   },
   server: {
-    port: 5173,
+    port: 3000,
     host: true,
     strictPort: true,
-    historyApiFallback: true,
+    proxy: mode === 'development' ? {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false
+      }
+    } : undefined
   },
   css: {
-    postcss: './postcss.config.js',
-  },
-}) 
+    postcss: './postcss.config.js'
+  }
+})) 

@@ -38,9 +38,9 @@ const ErrorFallback = ({ error }: { error?: Error }) => {
 
   return (
     <Container size="md" style={{ paddingTop: '100px' }}>
-      <Stack align="center" spacing="lg">
+      <Stack gap="lg" align="center">
         <Title order={1}>Oops! Something went wrong</Title>
-        <Text size="lg" color="dimmed" align="center">
+        <Text size="lg" c="dimmed" ta="center">
           {error?.message || 'An unexpected error occurred'}
         </Text>
         <Button onClick={() => navigate('/', { replace: true })}>
