@@ -37,13 +37,17 @@ const ErrorFallback = ({ error }: { error?: Error }) => {
   const navigate = useNavigate();
 
   return (
-    <Container size="md" style={{ paddingTop: '100px' }}>
+    <Container size="md" pt={100}>
       <Stack gap="lg" align="center">
-        <Title order={1}>Oops! Something went wrong</Title>
-        <Text size="lg" c="dimmed" ta="center">
+        <Title order={1} ta="center">Oops! Something went wrong</Title>
+        <Text size="lg" c="dimmed" ta="center" w="100%">
           {error?.message || 'An unexpected error occurred'}
         </Text>
-        <Button onClick={() => navigate('/', { replace: true })}>
+        <Button 
+          onClick={() => navigate('/', { replace: true })}
+          variant="filled"
+          color="blue"
+        >
           Return to Home
         </Button>
       </Stack>
