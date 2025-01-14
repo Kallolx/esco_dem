@@ -34,12 +34,20 @@ export const Signup = () => {
       setLoading(true);
       setError('');
 
+      // Determine the redirect URL based on environment
+      const redirectUrl = window.location.hostname === 'localhost' 
+        ? `${window.location.origin}/auth/callback`
+        : 'https://escort-five.vercel.app/auth/callback';
+
       // Create auth user
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: redirectUrl,
+          data: {
+            name,
+          }
         },
       });
 
