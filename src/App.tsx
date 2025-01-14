@@ -1,7 +1,6 @@
 import React from 'react';
 import { MantineProvider, createTheme } from '@mantine/core';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { ErrorBoundary } from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 
@@ -52,39 +51,37 @@ const AppContent = () => {
   const isAuthPage = ['/login', '/signup', '/verify-email', '/auth/callback'].includes(location.pathname);
 
   return (
-    <ErrorBoundary>
-      <div 
-        style={{
-          minHeight: '100vh',
-          width: '100%',
-          backgroundColor: '#1A1B1E',
-          backgroundImage: isAuthPage ? 
-            `linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), url('/images/hero.jpg')` :
-            `linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9)), url('/bg-dark.jpg')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed'
-        }}
-      >
-        <ScrollToTop />
-        {!isAuthPage && <Navbar />}
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/location/:state" element={<LocationResults />} />
-          <Route path="/location/:state/:city" element={<LocationResults />} />
-          <Route path="/escort/:id" element={<EscortProfile />} />
-          <Route path="/my-ads" element={<MyAds />} />
-          <Route path="/ad/upgrade/:id" element={<AdUpgrade />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/post" element={<PostAd />} />
-        </Routes>
-        <Footer />
-      </div>
-    </ErrorBoundary>
+    <div 
+      style={{
+        minHeight: '100vh',
+        width: '100%',
+        backgroundColor: '#1A1B1E',
+        backgroundImage: isAuthPage ? 
+          `linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), url('/images/hero.jpg')` :
+          `linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9)), url('/bg-dark.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      <ScrollToTop />
+      {!isAuthPage && <Navbar />}
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/location/:state" element={<LocationResults />} />
+        <Route path="/location/:state/:city" element={<LocationResults />} />
+        <Route path="/escort/:id" element={<EscortProfile />} />
+        <Route path="/my-ads" element={<MyAds />} />
+        <Route path="/ad/upgrade/:id" element={<AdUpgrade />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/post" element={<PostAd />} />
+      </Routes>
+      <Footer />
+    </div>
   );
 };
 
